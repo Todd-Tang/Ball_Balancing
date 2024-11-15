@@ -6,4 +6,9 @@ print(ser.name)
 ser.write(b'$$')
 time.sleep(1)
 #print(ser.readline())
-print(ser.readline())
+
+
+message = ser.readline()
+while ("ok" not in message and "error" not in message):
+    print(message)
+    message = ser.readline()
