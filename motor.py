@@ -3,13 +3,13 @@ import time
 #ser = serial.Serial('/dev/serial0', 115200, timeout=1)
 ser = serial.Serial('/dev/ttyACM0', 115200, timeout=1)
 print(ser.name)
-time.sleep(0.1)
-ser.readall()
+time.sleep(1)
+print(ser.readall())
 ser.write(b'$$\n')
 #time.sleep(1)
 #ser.write(b'$$\r\n')
 #time.sleep(1)
-ser.readall()
+print(ser.readall())
 
 #print(ser.readline())
 
