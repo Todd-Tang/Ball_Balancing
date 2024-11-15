@@ -9,6 +9,6 @@ time.sleep(1)
 
 
 message = ser.readline()
-while ("ok" not in message and "error" not in message):
+while (b"ok" not in message and b"error" not in message):
     print(message)
     message = ser.readline()
