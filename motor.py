@@ -5,7 +5,10 @@ ser = serial.Serial('/dev/ttyACM0', 115200, timeout=1)
 print(ser.name)
 time.sleep(1)
 print(ser.readall())
-ser.write(b'G1 X0.1\n')
+ser.write(b'G91\n')
+
+ser.write(b'G0 X0.1 F1\n')
+
 #time.sleep(1)
 #ser.write(b'$$\r\n')
 #time.sleep(1)
