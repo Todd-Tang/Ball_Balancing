@@ -4,16 +4,15 @@ import time
 ser = serial.Serial('/dev/ttyACM0', 115200, timeout=1)
 print(ser.name)
 time.sleep(1)
-ser.write(b'G1 x1\r\n')
+ser.write(b'?\n')
 #time.sleep(1)
 #ser.write(b'$$\r\n')
 #time.sleep(1)
+response = ser.readlines()
+for line in response:
+    print(line.strip().decode('utf-8'))
 
-print(ser.readline())
-print(ser.readline())
-print(ser.readline())
-print(ser.readline())
-
+#print(ser.readline())
 
 
 """""
