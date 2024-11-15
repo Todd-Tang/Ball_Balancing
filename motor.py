@@ -7,7 +7,7 @@ time.sleep(1)
 print(ser.readall())
 ser.write(b'G91\n')
 
-ser.write(b'G0 X0.1 F1\n')
+ser.write(b'G0 X0.1 Y0.1 Z0.1 F1\n')
 print(ser.readall())
 
 ser.write(b'G0 X0.2 F1\n')
