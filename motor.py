@@ -3,14 +3,13 @@ import time
 #ser = serial.Serial('/dev/serial0', 115200, timeout=1)
 ser = serial.Serial('/dev/ttyACM0', 115200, timeout=1)
 print(ser.name)
-time.sleep(1)
+time.sleep(0.1)
+ser.readall()
 ser.write(b'$$\n')
 #time.sleep(1)
 #ser.write(b'$$\r\n')
 #time.sleep(1)
-response = ser.readlines()
-for line in response:
-    print(line.strip().decode('utf-8'))
+ser.readall()
 
 #print(ser.readline())
 
