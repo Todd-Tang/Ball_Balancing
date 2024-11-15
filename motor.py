@@ -4,7 +4,7 @@ import time
 ser = serial.Serial('/dev/ttyACM0', 115200, timeout=1)
 print(ser.name)
 time.sleep(1)
-ser.write(b'?\n')
+ser.write(b'$$\n')
 #time.sleep(1)
 #ser.write(b'$$\r\n')
 #time.sleep(1)
