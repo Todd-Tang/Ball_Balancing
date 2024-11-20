@@ -81,49 +81,6 @@ def control_robot():
             continue
         
         
-        
-        """""
-        # 誤差を計算
-        error_x = plate_centre[0] - ball_pos[0]
-        error_y = plate_centre[1] - ball_pos[1]
-        # 積分値を計算
-        integral_x += error_x * (current_time - last_time)
-        integral_y += error_y * (current_time - last_time)
-
-        # 微分値を計算
-        derivative_x = (error_x - last_error_x) / (current_time - last_time)
-        derivative_y = (error_y - last_error_y) / (current_time - last_time)
-        # PID出力を計算
-        integral_x = 0
-        integral_y = 0
-        output_x = kp * error_x + ki * integral_x + kd * derivative_x
-        output_y = kp * error_y + ki * integral_y + kd * derivative_y
-        # ローパスフィルタを適用
-        output_x = alpha * output_x + (1 - alpha) * last_output_x
-        output_y = alpha * output_y + (1 - alpha) * last_output_y
-
-        print("x: ", output_x, "y: ", output_y)
-        # thetaとphiを計算
-        theta = math.degrees(math.atan2(output_y, output_x))
-        if theta < 0:
-            theta += 360
-        phi = tilt_k * math.sqrt(output_x**2 + output_y**2)
-        phi = _saturation(phi, -10, 10)
-        print("integral_x ", integral_x, "integral_y ", integral_y)
-
-        last_error_x = error_x
-        last_error_y = error_y
-        last_output_x = output_x
-        last_output_y = output_y
-        last_time = current_time
-
-        #return theta, phi
-        print(theta, phi)
-        """
-
-
-        #
-        
         theta = math.degrees(math.atan2(output_y, output_x))
         phi = -tilt_k * math.sqrt(output_x**2+output_y**2)  
         phi = _saturation(phi, -max_tilt, max_tilt)
