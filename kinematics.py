@@ -3,11 +3,13 @@ import time
 
 class BBrobot:
     #ロボットの構造を作成
-    def __init__(self, ids):#サーボ番号のリストを受け取る
+    def __init__(self):#サーボ番号のリストを受け取る
         #シリアルポートを準備
-        
+
         #リンクの長さL = [底, 下リンク, 上リンク, 天井]
-        self.L = [0.04, 0.04, 0.065, 0.065]
+        #self.L = [0.04, 0.04, 0.065, 0.065]
+        self.L = [0.065, 0.08, 0.075, 0.15]
+
         #初期姿勢(theta, phi, pz)
         self.ini_pos = [0, 0, 0.0632]
         self.pz_max = 0.0732
@@ -15,8 +17,10 @@ class BBrobot:
         self.phi_max = 20
         
     def kinema_inv(self, n, Pz):
+        #L[1] is L2, L[0] is L3
+        #L[3,2,1,0] = L0,1,2,3
         L = self.L
-        #サーボ基準時の高さPmz導出(Pmzで+-反転)
+        #Derivation of height Pmz at servo reference (+- inverted with Pmz)
         A = (L[0]+L[1])/Pz
         B = (Pz**2+L[2]**2-(L[0]+L[1])**2-L[3]**2)/(2*Pz)
         C = A**2+1
@@ -25,10 +29,11 @@ class BBrobot:
         Pmx = (-D+math.sqrt(D**2-4*C*E))/(2*C)
         Pmz = math.sqrt(L[2]**2-Pmx**2+2*(L[0]+L[1])*Pmx-(L[0]+L[1])**2)
 
-        #サーボaの角度導出
+        #Inverse kinematics for the angle of servo a
         a_m_x = (L[3]/(math.sqrt(n[0]**2 + n[2]**2)))*(n[2])
         a_m_y = 0
         a_m_z = Pz + (L[3]/(math.sqrt(n[0]**2 + n[2]**2)))*(-n[0])
+        #A_m = [a,b,c]
         A_m = [a_m_x, a_m_y, a_m_z]
         A = (L[0]-A_m[0])/A_m[2]
         B = (A_m[0]**2+A_m[1]**2+A_m[2]**2-L[2]**2-L[0]**2+L[1]**2)/(2*A_m[2])
@@ -38,9 +43,11 @@ class BBrobot:
         ax = (-D+math.sqrt(D**2-4*C*E))/(2*C)
         ay = 0
         az = math.sqrt(L[1]**2-ax**2+2*L[0]*ax-L[0]**2)
+
         if (a_m_z < Pmz):
             az = -az
         A_2 = [ax, ay, az]
+        
         theta_a = 90 - math.degrees(math.atan2(A_2[0]-L[0], A_2[2]))
 
         #サーボbの角度導出
@@ -57,9 +64,12 @@ class BBrobot:
         x = (-D-math.sqrt(D**2-4*C*E))/(2*C)
         y = math.sqrt(3)*x
         z = math.sqrt(L[1]**2-4*x**2-4*L[0]*x-L[0]**2)
+
         if (b_m_z < Pmz):
             z = -z
+
         B_2 = [x, y, z]
+        
         theta_b = 90 - math.degrees(math.atan2(math.sqrt(B_2[0]**2+B_2[1]**2)-L[0], B_2[2]))
 
         #サーボcの角度導出
@@ -76,9 +86,12 @@ class BBrobot:
         x = (-D-math.sqrt(D**2-4*C*E))/(2*C)
         y = -math.sqrt(3)*x
         z = math.sqrt(L[1]**2-4*x**2-4*L[0]*x-L[0]**2)
+
         if (c_m_z < Pmz):
             z = -z
+
         C_2 = [x, y, z]
+        
         theta_c = 90 - math.degrees(math.atan2(math.sqrt(C_2[0]**2+C_2[1]**2)-L[0], C_2[2]))
         thetas = [theta_a, theta_b, theta_c]
         return thetas
