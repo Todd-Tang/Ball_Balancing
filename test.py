@@ -4,7 +4,7 @@ from time import sleep
 axis_control.init_axis_control("/dev/ttyACM0", 10, logging=True)
 
 # Try to test acceleration figures
-acceleration_max = 2000
+acceleration_max = 1995
 acceleration_min = 0
 
 do_log = False

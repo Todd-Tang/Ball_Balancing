@@ -50,7 +50,6 @@ class BBrobot:
         
         theta_a = 90 - math.degrees(math.atan2(A_2[0]-L[0], A_2[2]))
 
-        #サーボbの角度導出
         b_m_x = (L[3]/(math.sqrt(n[0]**2+3*n[1]**2+4*n[2]**2+2*math.sqrt(3)*n[0]*n[1])))*(-n[2])
         b_m_y = (L[3]/(math.sqrt(n[0]**2+3*n[1]**2+4*n[2]**2+2*math.sqrt(3)*n[0]*n[1])))*(-math.sqrt(3)*n[2])
         b_m_z = Pz + (L[3]/(math.sqrt(n[0]**2+3*n[1]**2+4*n[2]**2+2*math.sqrt(3)*n[0]*n[1])))*(math.sqrt(3)*n[1]+n[0])
@@ -72,7 +71,6 @@ class BBrobot:
         
         theta_b = 90 - math.degrees(math.atan2(math.sqrt(B_2[0]**2+B_2[1]**2)-L[0], B_2[2]))
 
-        #サーボcの角度導出
         c_m_x = (L[3]/(math.sqrt(n[0]**2+3*n[1]**2+4*n[2]**2-2*math.sqrt(3)*n[0]*n[1])))*(-n[2])
         c_m_y = (L[3]/(math.sqrt(n[0]**2+3*n[1]**2+4*n[2]**2-2*math.sqrt(3)*n[0]*n[1])))*(math.sqrt(3)*n[2])
         c_m_z = Pz + (L[3]/(math.sqrt(n[0]**2+3*n[1]**2+4*n[2]**2-2*math.sqrt(3)*n[0]*n[1])))*(-math.sqrt(3)*n[1]+n[0])
@@ -96,11 +94,10 @@ class BBrobot:
         thetas = [theta_a, theta_b, theta_c]
         return thetas
 
-    #t秒後に姿勢(theta, phi, Pz)を実現するメソッド
     def control_t_posture(self, pos, t):
         theta = pos[0]
         phi = pos[1]
-        #動作の制約
+    
         if phi > self.phi_max:
             phi = self.phi_max
         Pz = pos[2]

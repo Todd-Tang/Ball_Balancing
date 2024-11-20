@@ -5,14 +5,17 @@ import time
 
 # '***' stands for things to modify for your own webcam, display, and ball if needed
 ball_location = None
-resolution_scaling_factor = 1.5
+last_location = None
+resolution_scaling_factor = 3
 resolution = (int(1280/resolution_scaling_factor), int(720/resolution_scaling_factor))
 plate_centre = [int((522) / (resolution_scaling_factor)),int((720 - 350)/resolution_scaling_factor)]
 camera_rotation = -4
 
+is_running = True
+
 # Define a function to detect a yellow ball
 def detect_ball():
-    global ball_location
+    global ball_location, last_location
     # Start capturing video from the webcam. If multiple webcams connected, you may use 1,2, etc.
 
     
@@ -22,14 +25,16 @@ def detect_ball():
     cap.set(cv2.CAP_PROP_FPS, 30)
 
     fps = 0
+    dps = 0
     last_time = 0
-    while True:
+    while is_running:
 
         sleep(0.0) # yield control
         fps += 1
         if (time.time() - last_time) > 1:
-            print(f"FPS: {fps}")
+            print(f"FPS: {fps}, DPS: {dps}")
             fps = 0
+            dps = 0
             last_time = time.time()
 
         ret, frame = cap.read()
@@ -53,15 +58,16 @@ def detect_ball():
         ball_color_upper = np.array([30, 255, 255]) # [upper Hue, upper Saturation, upper Value]
         """
 
-        ball_color_lower = np.array([8, 60, 100]) # [lower Hue, lower Saturation, lower Value]
+        ball_color_lower = np.array([8, 80, 100]) # [lower Hue, lower Saturation, lower Value]
         ball_color_upper = np.array([28, 250, 255])
 
         # Threshold the HSV image to get the colors defined above
         # Pixels in the range are set to white (255) and those that aren't are set to black (0), creating a binary mask 
-        # kernel = np.ones((4, 4), np.uint8) 
+        kernel = np.ones((4, 4), np.uint8) 
         mask = cv2.inRange(hsv, ball_color_lower, ball_color_upper)
-        # mask = cv2.dilate(mask, kernel, iterations=1)
-        # mask = cv2.erode(mask, kernel, iterations=1)
+        mask = cv2.dilate(mask, kernel, iterations=4)
+        mask = cv2.erode(mask, kernel, iterations=8)
+        mask = cv2.dilate(mask, kernel, iterations=5)
         image = cv2.bitwise_not(mask)
 
         #image = frame
@@ -72,7 +78,7 @@ def detect_ball():
         
         # Set Area filtering parameters 
         params.filterByArea = True
-        params.minArea = 1000
+        params.minArea = 500
         params.maxArea = 1000000
         
         # Set Circularity filtering parameters 
@@ -81,7 +87,7 @@ def detect_ball():
         
         # Set Convexity filtering parameters 
         params.filterByConvexity = True
-        params.minConvexity = 0.5
+        params.minConvexity = 0.1
             
         # Set inertia filtering parameters 
         params.filterByInertia = True
@@ -93,11 +99,14 @@ def detect_ball():
         # Detect blobs 
         keypoints = detector.detect(image) 
 
-        last_location = plate_centre
+        # if last_location is None:
+        #     continue
+        #     #last_location = plate_centre
 
         if len(keypoints) > 0:
             ball_location = [keypoints[0].pt[0], resolution[1]-keypoints[0].pt[1]]
             last_location = ball_location
+            dps+=1
             #print(ball_location)
         else:
             ball_location = last_location
@@ -120,7 +129,7 @@ def detect_ball():
 
         # Display the resulting frame
         cv2.imshow('frame', frame)
-        cv2.imshow('mask', mask)
+        #cv2.imshow('mask', mask)
 
 
         # Break the loop when 'q' is pressed
@@ -131,5 +140,10 @@ def detect_ball():
     cap.release()
     # Close all windows
     cv2.destroyAllWindows()
+
+# Stops the thread
+def stop():
+    global is_running
+    is_running = False
 
 # 

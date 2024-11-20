@@ -16,9 +16,11 @@ m1_angle = None
 m2_angle = None
 m3_angle = None
 
+min_move = 0.1
+max_move = 10
 
-min_move = 0.2
-max_move = 30
+is_running = True
+is_homing = False
 
 def _saturate(val, min_val, max_val):
     return min(max(val, min_val), max_val)
@@ -90,22 +92,28 @@ def set_acceleration(acceleration, logging=False):
 
 
 def home_axes(logging=False):
-    global m1_angle, m2_angle, m3_angle
+    global m1_angle, m2_angle, m3_angle, is_homing
 
     # TODO: Add code to handle errors
     _send_command("$1 = 0", logging)             # Turn down machine hold
     _send_command("G91", logging)                # Set relative mode
     # For the next second, toggle between hold and no hold.
     # This is to make sure the motors fall gently
-    """ Code originally made to make a "soft landing
-    starting_time = time.time_ns()
-    while (time.time_ns() - starting_time) < 1000000000:
-        _send_command("G0 X1 Y1 Z1 F1")     # Make a move that doesn't do anything so motors fall
-        time.sleep(10e-3)                          # Wait 10ms for motors to drop
-    time.sleep(0.25)
-    """
+
+    is_homing = True
+    
+    # # Code originally made to make a "soft landing"
+    # starting_time = time.time_ns()
+    # while (time.time_ns() - starting_time) < 1000000000:
+    #     _send_command("G0 X1 Y1 Z1 F1")     # Make a move that doesn't do anything so motors fall
+    #     time.sleep(10e-3)                          # Wait 10ms for motors to drop
+    # time.sleep(0.25)
+
+    
+    # Move to the home position
     _send_command("G0 X1 Y1 Z1 F1", logging)
     time.sleep(1)
+    
     
     # Wait for motors to fall
     _send_command("G92 X132 Y132 Z132", logging) # Set new coords
@@ -116,8 +124,13 @@ def home_axes(logging=False):
     _wait_for_move_finished(logging)           # Wait for move to finish
     (m1_angle, m2_angle, m3_angle) = (131, 131, 131)
 
+    is_homing = False
+
 def axis_control_loop():
-    while True:
+    while is_running:
+        if is_homing:
+            time.sleep(0)
+            continue
         _move_axes()
         time.sleep(0)
 
@@ -148,7 +161,10 @@ def init_axis_control(port_addr, max_acceleration, logging=False):
     motor_control_thread = threading.Thread(target=axis_control_loop)
     motor_control_thread.start()
 
-
+# Stops the thread
+def stop():
+    global is_running
+    is_running = False
 
 
 if __name__ == "__main__":
