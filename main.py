@@ -1,9 +1,12 @@
-import kinematics
+import time
 import math
+
+import numpy as np
+
+import kinematics
 import threading
 import camera
-import numpy as np
-import time
+
 import axis_control
 import closed_loop_control
 
@@ -157,7 +160,7 @@ if __name__ == "__main__":
     camera_thread = threading.Thread(target=camera.detect_ball)
     camera_thread.start()
     time.sleep(0.25)
-    axis_control.move_axes(90, 90, 90, 1)
+
     robot_thread = threading.Thread(target=control_robot)
     robot_thread.start()
 
