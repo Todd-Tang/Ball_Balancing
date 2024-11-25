@@ -147,9 +147,6 @@ def init_axis_control(port_addr, max_acceleration, logging=False):
     _send_command(f"$101={steps_per_degree}", logging)
     _send_command(f"$102={steps_per_degree}", logging)
 
-    # Set up acceleration
-    set_acceleration(max_acceleration, logging)
-
     # Invert axes
     _send_command("$3=255", logging)
     # Turn on hold for debugging
@@ -157,7 +154,16 @@ def init_axis_control(port_addr, max_acceleration, logging=False):
     # Home axes
     home_axes()
 
-    # Motor control loop
+    # Lower acceleration for initial move to neutral position (avoid skipping microsteps)
+    set_acceleration(25, logging)
+
+    # Move to initial position
+    _send_command("G1 90 90 90 F100")
+
+    # Set up acceleration
+    set_acceleration(max_acceleration, logging)
+
+    # Motor control loop (Now can call move_axes safely)
     motor_control_thread = threading.Thread(target=axis_control_loop)
     motor_control_thread.start()
 

@@ -1,9 +1,12 @@
-import kinematics
+import time
 import math
+
+import numpy as np
+
+import kinematics
 import threading
 import camera
-import numpy as np
-import time
+
 import axis_control
 import closed_loop_control
 
@@ -47,7 +50,7 @@ def control_robot():
     
     print("thread started")
     
-    robot = kinematics.BBrobot()
+    robot = kinematics.Kinematics()
     pid_x = closed_loop_control.Closed_Loop_Control(kp, ki, kd, p_sat, i_sat, d_sat, alpha)
     pid_y = closed_loop_control.Closed_Loop_Control(kp, ki, kd, p_sat, i_sat, d_sat, alpha)
 
@@ -95,7 +98,7 @@ def control_robot():
         y = r*math.sin(math.radians(theta))
         n = [x, y, z]
 
-        thetas = np.subtract([90,90,90], robot.kinema_inv(n, 0.075))
+        thetas = np.subtract([90,90,90], robot.inv_kinematics(n, 0.075))
 
         if (num_runs % 200 == 0):
             print(theta, phi)
