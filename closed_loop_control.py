@@ -23,7 +23,7 @@ def _saturate(value, min_value, max_value):
 
 class Closed_Loop_Control:
 
-    def __init__(self, kp, ki, kd, sat_p, sat_i, sat_d):
+    def __init__(self, kp, ki, kd, sat_p, sat_i, sat_d, alpha):
         self.kp = kp
         self.ki = ki
         self.kd = kd
@@ -32,14 +32,22 @@ class Closed_Loop_Control:
         self.sat_i = sat_i
         self.sat_d = sat_d
 
+        self.alpha = alpha
+
         # TODO: Implement Ki if necessary, but otherwise it will be left blank.
 
         self.error = 0
         self.last_error = 0
+        self.integral = 0 
         self.last_time = time.time()
         self.current_time = time.time()
 
-        self.epsilon = 10
+        self.epsilon = 0
+        self.last_output = 0
+
+        self.counter = 0
+        self.last_5th_error = 0
+        self.last_5th_time = 0
 
 
     def update(self, setpoint, current_value):
@@ -55,19 +63,38 @@ class Closed_Loop_Control:
 
         if abs(self.error) < abs(self.epsilon):
             return 0
+        
+        # Calculate integral
+        self.integral += self.error * (self.current_time - self.last_time)
+        # Saturate integral
+        self.integral = _saturate(self.integral, -self.sat_i / self.ki, self.sat_i/self.ki)
+
+        if self.counter == 5:
+            derivative = (self.error - self.last_5th_error) / (self.current_time - self.last_5th_time)
+            self.last_5th_error = self.error
+            self.last_5th_time = self.current_time
+            self.counter = 0
+
+        self.counter += 1
+        
+        
+        # derivative = (self.error - self.last_error) / (self.current_time - self.last_time)
 
         # Calculate derivative
-        derivative = (self.error - self.last_error) / (self.current_time - self.last_time)
 
         p_component = _saturate(self.kp * self.error, -self.sat_p, self.sat_p)
-        d_component = _saturate(self.kp * derivative, -self.sat_d, self.sat_d)
+
+        i_component = self.ki * self.integral
+    
+        d_component = _saturate(self.kd * derivative, -self.sat_d, self.sat_d)
 
 
         # Calculate output
+        print(f"p_component: {p_component}, i_component: {i_component}, d_component: {d_component}")
 
-        print(f"p_component: {p_component}, d_component: {d_component}")
+        output = (p_component + i_component + d_component) * (1-self.alpha) + (self.alpha) * self.last_output
+        self.last_output = output
 
-        output = p_component + d_component
 
         # Update variables
         self.last_error = self.error

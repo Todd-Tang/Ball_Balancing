@@ -7,20 +7,20 @@ import time
 import axis_control
 import closed_loop_control
 
-max_acceleration = 1000 # deg/s^2
+max_acceleration = 700 # deg/s^2
 
 plate_centre = camera.plate_centre
 # Convert from cameraspace to robotspace
 plate_centre[1] = camera.resolution[1] - plate_centre[1]
 
 tilt_k = 0.02
-max_tilt = 2.5
-alpha = 0.1
+max_tilt = 8
+alpha = 0.2
 
 
 
-[kp,ki,kd] = [1, 0.00001, -1000]
-[p_sat, d_sat] = [100000, 10000000]
+[kp,ki,kd] = [1, 0.5, 1.5]
+[p_sat, i_sat, d_sat] = [100000, 100/2, 10000000]
 last_output_x = 0
 last_output_y = 0
 last_error_x = 0
@@ -48,8 +48,8 @@ def control_robot():
     print("thread started")
     
     robot = kinematics.BBrobot()
-    pid_x = closed_loop_control.Closed_Loop_Control(kp, ki, kd, p_sat, 0, d_sat)
-    pid_y = closed_loop_control.Closed_Loop_Control(kp, ki, kd, p_sat, 0, d_sat)
+    pid_x = closed_loop_control.Closed_Loop_Control(kp, ki, kd, p_sat, i_sat, d_sat, alpha)
+    pid_y = closed_loop_control.Closed_Loop_Control(kp, ki, kd, p_sat, i_sat, d_sat, alpha)
 
     num_runs = 0
 
@@ -77,46 +77,7 @@ def control_robot():
         if current_time - last_time == 0:
             continue
         
-        
-        
-        """""
-        # 誤差を計算
-        error_x = plate_centre[0] - ball_pos[0]
-        error_y = plate_centre[1] - ball_pos[1]
-        # 積分値を計算
-        integral_x += error_x * (current_time - last_time)
-        integral_y += error_y * (current_time - last_time)
 
-        # 微分値を計算
-        derivative_x = (error_x - last_error_x) / (current_time - last_time)
-        derivative_y = (error_y - last_error_y) / (current_time - last_time)
-        # PID出力を計算
-        integral_x = 0
-        integral_y = 0
-        output_x = kp * error_x + ki * integral_x + kd * derivative_x
-        output_y = kp * error_y + ki * integral_y + kd * derivative_y
-        # ローパスフィルタを適用
-        output_x = alpha * output_x + (1 - alpha) * last_output_x
-        output_y = alpha * output_y + (1 - alpha) * last_output_y
-
-        print("x: ", output_x, "y: ", output_y)
-        # thetaとphiを計算
-        theta = math.degrees(math.atan2(output_y, output_x))
-        if theta < 0:
-            theta += 360
-        phi = tilt_k * math.sqrt(output_x**2 + output_y**2)
-        phi = _saturation(phi, -10, 10)
-        print("integral_x ", integral_x, "integral_y ", integral_y)
-
-        last_error_x = error_x
-        last_error_y = error_y
-        last_output_x = output_x
-        last_output_y = output_y
-        last_time = current_time
-
-        #return theta, phi
-        print(theta, phi)
-        """
 
 
         #
@@ -154,10 +115,10 @@ def control_robot():
 if __name__ == "__main__":
 
     axis_control.init_axis_control("/dev/ttyACM0", max_acceleration)
+    axis_control.move_axes(90, 90, 90, 1)
     camera_thread = threading.Thread(target=camera.detect_ball)
     camera_thread.start()
     time.sleep(0.25)
-    axis_control.move_axes(90, 90, 90, 1)
     robot_thread = threading.Thread(target=control_robot)
     robot_thread.start()
 
