@@ -1,33 +1,28 @@
 import math
 import time
 
-class BBrobot:
-    #ロボットの構造を作成
-    def __init__(self):#サーボ番号のリストを受け取る
-        #シリアルポートを準備
-
-        #リンクの長さL = [底, 下リンク, 上リンク, 天井]
-        #self.L = [0.04, 0.04, 0.065, 0.065]
+class Kinematics:
+    def __init__(self):
+        """Initialize the kinematics class"""
+        # Member lengths (L3, L2, L1, L0)
         self.L = [0.065, 0.08, 0.075, 0.15]
-
-        #初期姿勢(theta, phi, pz)
-        self.ini_pos = [0, 0, 0.0632]
-        self.pz_max = 0.0732
-        self.pz_min = 0.0532
-        self.phi_max = 20
         
-    def kinema_inv(self, n, Pz):
-        #L[1] is L2, L[0] is L3
-        #L[3,2,1,0] = L0,1,2,3
+    def inv_kinematics(self, n, Pz):
+        """Calculate theta angles for the robot based on the normal vector n and the height Pz"""
+        
         L = self.L
-        #Derivation of height Pmz at servo reference (+- inverted with Pmz)
-        A = (L[0]+L[1])/Pz
+
+        # Find mean values for the x and z coordinates of the leg "knee" joint across 3 legs
+        A = (L[0]+L[1])/Pz 
         B = (Pz**2+L[2]**2-(L[0]+L[1])**2-L[3]**2)/(2*Pz)
         C = A**2+1
         D = 2*(A*B-(L[0]+L[1]))
         E = B**2+(L[0]+L[1])**2-L[2]**2
-        Pmx = (-D+math.sqrt(D**2-4*C*E))/(2*C)
+
+        
+        Pmx = (-D+math.sqrt(D**2-4*C*E))/(2*C) # Apply quadratic formula to find the x position of the leg "knee" joint
         Pmz = math.sqrt(L[2]**2-Pmx**2+2*(L[0]+L[1])*Pmx-(L[0]+L[1])**2)
+            # Pythagorean theorem to find the z position of the leg "knee" joint 
 
         #Inverse kinematics for the angle of servo a
         a_m_x = (L[3]/(math.sqrt(n[0]**2 + n[2]**2)))*(n[2])
@@ -93,30 +88,3 @@ class BBrobot:
         theta_c = 90 - math.degrees(math.atan2(math.sqrt(C_2[0]**2+C_2[1]**2)-L[0], C_2[2]))
         thetas = [theta_a, theta_b, theta_c]
         return thetas
-
-    def control_t_posture(self, pos, t):
-        theta = pos[0]
-        phi = pos[1]
-    
-        if phi > self.phi_max:
-            phi = self.phi_max
-        Pz = pos[2]
-        if Pz > self.pz_max:
-            Pz = self.pz_max
-        elif Pz < self.pz_min:
-            Pz = self.pz_min 
-        z = math.cos(math.radians(phi))
-        r = math.sin(math.radians(phi))
-        x = r*math.cos(math.radians(theta))
-        y = r*math.sin(math.radians(theta))
-        n = [x, y, z]
-        angles = self.kinema_inv(n, Pz)
-        self.s1.control_time_rotate(angles[0], t)
-        self.s2.control_time_rotate(angles[1], t)
-        self.s3.control_time_rotate(angles[2], t)
-        time.sleep(t)
-    
-    def Initialize_posture(self):
-        pos = self.ini_pos
-        t = 1
-        self.control_t_posture(pos, t)
