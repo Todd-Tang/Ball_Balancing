@@ -18,12 +18,12 @@ plate_centre[1] = camera.resolution[1] - plate_centre[1]
 
 tilt_k = 0.02
 max_tilt = 8
-alpha = 0.2
+alpha = 0.1
 
 
 
-[kp,ki,kd] = [1, 0.5, 1.5]
-[p_sat, i_sat, d_sat] = [100000, 100/2, 10000000]
+[kp,ki,kd] = [1.5, 0.5, 1.5]
+[p_sat, i_sat, d_sat] = [100000, 100, 10000000]
 last_output_x = 0
 last_output_y = 0
 last_error_x = 0
@@ -118,7 +118,11 @@ def control_robot():
 if __name__ == "__main__":
 
     axis_control.init_axis_control("/dev/ttyACM0", max_acceleration)
+    
+    axis_control.set_acceleration(100)
     axis_control.move_axes(90, 90, 90, 1)
+    time.sleep(5)
+    axis_control.set_acceleration(max_acceleration)
     camera_thread = threading.Thread(target=camera.detect_ball)
     camera_thread.start()
     time.sleep(0.25)

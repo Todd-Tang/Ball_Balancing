@@ -37,47 +37,68 @@ class Closed_Loop_Control:
         # TODO: Implement Ki if necessary, but otherwise it will be left blank.
 
         self.error = 0
-        self.last_error = 0
+        self.last_error = []
+        self.v = []
         self.integral = 0 
-        self.last_time = time.time()
+        self.derivative = 0
+        self.last_time = []
         self.current_time = time.time()
 
         self.epsilon = 0
         self.last_output = 0
 
         self.counter = 0
-        self.last_5th_error = 0
-        self.last_5th_time = 0
 
 
     def update(self, setpoint, current_value):
         self.current_time = time.time()
-        if self.last_time is None:
-            self.last_time = self.current_time
-            
-        if self.current_time - self.last_time == 0:
+        if len(self.last_time) == 0:
+            self.error = setpoint - current_value
+            self.last_time.append(self.current_time)
+            self.last_error.append(self.error)
+            print(self.last_error, self.last_time)  
+            self.counter += 1
             return 0
+        
+
+        #if self.current_time - self.last_time == 0:
+        #if self.counter == 0:
+        #    return 0
 
         # Calculate error
         self.error = setpoint - current_value
+
+        # Check if the data has changed and if it hasn't, skip this loop.
+        # Index is -1 since no new data has yet been added to the list. 
+        # if self.error == self.last_error[-1]:
+        #     return 0
+
+        self.last_error.append(self.error)
+        self.last_time.append(self.current_time)
+
 
         if abs(self.error) < abs(self.epsilon):
             return 0
         
         # Calculate integral
-        self.integral += self.error * (self.current_time - self.last_time)
+        self.integral += self.error * (self.current_time - self.last_time[-2])
         # Saturate integral
         self.integral = _saturate(self.integral, -self.sat_i / self.ki, self.sat_i/self.ki)
 
-        if self.counter == 5:
-            derivative = (self.error - self.last_5th_error) / (self.current_time - self.last_5th_time)
-            self.last_5th_error = self.error
-            self.last_5th_time = self.current_time
-            self.counter = 0
+        """print(self.last_error, self.last_time)"""  
 
-        self.counter += 1
+        if self.counter <= 4:
+            self.derivative = (self.error - self.last_error[-2]) / (self.current_time - self.last_time[-2])
+            self.v.append(self.derivative)
+            self.counter += 1
+        else:
+            for i in range(4):
+                self.v[i] = (self.last_error[i+1]-self.last_error[i])/(self.last_time[i+1]-self.last_time[i])
+            self.derivative = self.v[0]*0.1 + self.v[1]* 0.1 + self.v[2]*0.2 + self.v[3]*0.6
         
-        
+            """print(f"Velocity: [{self.v[0]},{self.v[1]},{self.v[2]},{self.v[3]}]")"""
+
+
         # derivative = (self.error - self.last_error) / (self.current_time - self.last_time)
 
         # Calculate derivative
@@ -86,19 +107,26 @@ class Closed_Loop_Control:
 
         i_component = self.ki * self.integral
     
-        d_component = _saturate(self.kd * derivative, -self.sat_d, self.sat_d)
+        d_component = _saturate(self.kd * self.derivative, -self.sat_d, self.sat_d)
 
 
         # Calculate output
-        print(f"p_component: {p_component}, i_component: {i_component}, d_component: {d_component}")
+        """print(f"p_component: {p_component}, i_component: {i_component}, d_component: {d_component}")"""
 
         output = (p_component + i_component + d_component) * (1-self.alpha) + (self.alpha) * self.last_output
         self.last_output = output
 
 
         # Update variables
-        self.last_error = self.error
-        self.last_time = self.current_time
+
+
+        #self.last_error = self.error
+        #self.last_time = self.current_time
+
+        
+        if len(self.last_error) >= 5:
+            self.last_error.pop(0)
+            self.last_time.pop(0)
 
         return output
 

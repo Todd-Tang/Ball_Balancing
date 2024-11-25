@@ -116,13 +116,13 @@ def detect_ball():
         blobs = cv2.drawKeypoints(image, keypoints, blank, (0, 0, 255), 
                                 cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS) 
         for keypoint in keypoints:
-            cv2.circle(blobs, (int(keypoint.pt[0]), int(keypoint.pt[1])), 5, (0, 255, 0), -1)
+            cv2.circle(blobs, (int(keypoint.pt[0]), int(keypoint.pt[1])), 5, (0, 0, 255), -1)
 
         number_of_blobs = len(keypoints) 
         text = "Number of Circular Blobs: " + str(len(keypoints)) + "\n Ball Location: " + str(ball_location) 
         cv2.putText(blobs, text, (20, 550), 
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 100, 255), 2) 
-        cv2.circle(blobs, plate_centre, 5, (0, 255, 0), -1)
+        cv2.circle(blobs, plate_centre, 5, (255, 0, 0), -1)
         
         # Show blobs 
         cv2.imshow("Filtering Circular Blobs Only", blobs) 
