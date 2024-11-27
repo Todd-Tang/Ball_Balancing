@@ -44,11 +44,14 @@ class Closed_Loop_Control:
         self.last_time = []
         self.current_time = time.time()
 
-        self.epsilon = 0
+        self.epsilon = 10
         self.last_output = 0
 
         self.counter = 0
+        self.deadzone_factor = 1
 
+    def get_epsilon(self):
+        return self.epsilon
 
     def update(self, setpoint, current_value):
         self.current_time = time.time()
@@ -59,6 +62,8 @@ class Closed_Loop_Control:
             print(self.last_error, self.last_time)  
             self.counter += 1
             return 0
+        
+        
         
 
         #if self.current_time - self.last_time == 0:
@@ -76,14 +81,10 @@ class Closed_Loop_Control:
         self.last_error.append(self.error)
         self.last_time.append(self.current_time)
 
-
-        if abs(self.error) < abs(self.epsilon):
-            return 0
         
-        # Calculate integral
-        self.integral += self.error * (self.current_time - self.last_time[-2])
-        # Saturate integral
-        self.integral = _saturate(self.integral, -self.sat_i / self.ki, self.sat_i/self.ki)
+
+        
+        
 
         """print(self.last_error, self.last_time)"""  
 
@@ -98,6 +99,15 @@ class Closed_Loop_Control:
         
             """print(f"Velocity: [{self.v[0]},{self.v[1]},{self.v[2]},{self.v[3]}]")"""
 
+        # deadzone
+        if abs(self.error) < abs(self.epsilon):
+            self.deadzone_factor = 0.5
+        else:
+            self.deadzone_factor = 1
+            # Calculate integral
+            self.integral += self.error * (self.current_time - self.last_time[-2])
+            # Saturate integral
+            self.integral = _saturate(self.integral, -self.sat_i / self.ki, self.sat_i/self.ki)
 
         # derivative = (self.error - self.last_error) / (self.current_time - self.last_time)
 
@@ -111,7 +121,7 @@ class Closed_Loop_Control:
 
 
         # Calculate output
-        """print(f"p_component: {p_component}, i_component: {i_component}, d_component: {d_component}")"""
+        print(f"p: {p_component}, i: {i_component}, d: {d_component}")
 
         output = (p_component + i_component + d_component) * (1-self.alpha) + (self.alpha) * self.last_output
         self.last_output = output
@@ -128,8 +138,13 @@ class Closed_Loop_Control:
             self.last_error.pop(0)
             self.last_time.pop(0)
 
-        return output
+        return output * self.deadzone_factor
 
-
+    def zero_variables(self):
+        self.integral = 0
+        #self.last_error = []
+        #self.last_time = []
+        #self.counter = 0
+        #self.error = 0
 
 

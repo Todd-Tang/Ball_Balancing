@@ -2,19 +2,22 @@ import cv2
 import numpy as np
 from time import sleep
 import time
+import closed_loop_control
+
 
 # '***' stands for things to modify for your own webcam, display, and ball if needed
 ball_location = None
 last_location = None
 resolution_scaling_factor = 3
 resolution = (int(1280/resolution_scaling_factor), int(720/resolution_scaling_factor))
-plate_centre = [int((522) / (resolution_scaling_factor)),int((720 - 350)/resolution_scaling_factor)]
+goal = [522,350] #522, 350
+plate_centre = [int((goal[0]) / (resolution_scaling_factor)),int((720 - goal[1])/resolution_scaling_factor)]
 camera_rotation = -4
 
 is_running = True
 
 # Define a function to detect a yellow ball
-def detect_ball():
+def detect_ball(target_location):
     global ball_location, last_location
     # Start capturing video from the webcam. If multiple webcams connected, you may use 1,2, etc.
 
@@ -53,21 +56,24 @@ def detect_ball():
 
         # *3 Define the range of yellow color in HSV [Hue, Saturation, Value]
         # SET THESE VALUES VIA THE METHOD EXPLAINED IN THE TUTORIAL
-        """
-        ball_color_lower = np.array([20, 100, 100]) # [lower Hue, lower Saturation, lower Value]
-        ball_color_upper = np.array([30, 255, 255]) # [upper Hue, upper Saturation, upper Value]
-        """
+        
 
-        ball_color_lower = np.array([8, 80, 100]) # [lower Hue, lower Saturation, lower Value]
+
+        
+        ball_color_lower = np.array([8, 80, 100]) 
         ball_color_upper = np.array([28, 250, 255])
+        
 
         # Threshold the HSV image to get the colors defined above
         # Pixels in the range are set to white (255) and those that aren't are set to black (0), creating a binary mask 
         kernel = np.ones((4, 4), np.uint8) 
         mask = cv2.inRange(hsv, ball_color_lower, ball_color_upper)
+
+        
         mask = cv2.dilate(mask, kernel, iterations=4)
         mask = cv2.erode(mask, kernel, iterations=8)
         mask = cv2.dilate(mask, kernel, iterations=5)
+        
         image = cv2.bitwise_not(mask)
 
         #image = frame
@@ -122,8 +128,26 @@ def detect_ball():
         text = "Number of Circular Blobs: " + str(len(keypoints)) + "\n Ball Location: " + str(ball_location) 
         cv2.putText(blobs, text, (20, 550), 
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 100, 255), 2) 
-        cv2.circle(blobs, plate_centre, 5, (255, 0, 0), -1)
         
+        """""
+        #plate centre
+        cv2.circle(blobs, plate_centre, 5, (255, 0, 0), -1)
+
+        #deadzone
+        cv2.circle(blobs, plate_centre, 15, (255, 0, 0), 2)
+        """""
+        draw_plate_centre = [int((plate_centre[0])),int(720 - plate_centre[1])]
+
+        cv2.circle(blobs, draw_plate_centre, 5, (255, 0, 0), -1)
+
+        # draw goal
+        #cv2.circle(blobs, target_location, 5, (255, 0, 0), -1)
+
+        # draw deadzone
+        #cv2.circle(blobs, target_location, 15, (255, 0, 0), 2)
+        print("ball location:", ball_location)
+        print("Plate centre:", plate_centre)
+
         # Show blobs 
         cv2.imshow("Filtering Circular Blobs Only", blobs) 
 
@@ -141,9 +165,24 @@ def detect_ball():
     # Close all windows
     cv2.destroyAllWindows()
 
+def set_target_location(location):
+    global plate_centre
+    plate_centre = location.copy()
+
+    plate_centre[0] /= resolution_scaling_factor
+    plate_centre[1] /= resolution_scaling_factor
+
+    # Invert the y axis
+    plate_centre[1] = resolution[1] - plate_centre[1]
+    plate_centre = [int(plate_centre[0]), int(plate_centre[1])]
+
+    print(plate_centre)
+
 # Stops the thread
 def stop():
     global is_running
     is_running = False
 
+
+    
 # 

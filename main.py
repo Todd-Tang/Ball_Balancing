@@ -2,6 +2,7 @@ import time
 import math
 
 import numpy as np
+import cv2
 
 import kinematics
 import threading
@@ -10,9 +11,10 @@ import camera
 import axis_control
 import closed_loop_control
 
+
 max_acceleration = 700 # deg/s^2
 
-plate_centre = camera.plate_centre
+plate_centre = camera.plate_centre.copy()
 # Convert from cameraspace to robotspace
 plate_centre[1] = camera.resolution[1] - plate_centre[1]
 
@@ -22,6 +24,7 @@ alpha = 0.1
 
 
 
+#[kp,ki,kd] = [1.5, 0.5, 1.5]
 [kp,ki,kd] = [1.5, 0.5, 1.5]
 [p_sat, i_sat, d_sat] = [100000, 100, 10000000]
 last_output_x = 0
@@ -37,6 +40,14 @@ last_time = None
 is_control_running = True
 
 
+# Trajectory generation
+is_running_trajectory = True
+trajectory = [[50,50], [-50, 50], [-50, -50], [50, -50]]
+trajectory_wait_time = 5 #seconds
+trajectory_index = 0
+last_transition_time = time.time()
+target_location = [522,350]
+
 def _saturation(value, min, max):
     if value > max:
         return max
@@ -46,7 +57,7 @@ def _saturation(value, min, max):
         return value
 
 def control_robot():
-    global last_time, current_time, integral_x, integral_y, last_error_x, last_error_y, last_output_x, last_output_y
+    global last_time, current_time, integral_x, integral_y, last_error_x, last_error_y, last_output_x, last_output_y, target_location
     
     print("thread started")
     
@@ -62,14 +73,50 @@ def control_robot():
 
         num_runs += 1
 
-        
+        target_location = plate_centre
+
+        if is_running_trajectory:
+            global trajectory_index, last_transition_time
+            time_factor  = time.time() / 10
+
+            target_location = np.add([math.cos(time_factor), math.sin(time_factor)], plate_centre)
+
+            # # interpolate target_trajectory
+            # interpolation_factor = (time.time() - last_transition_time) / trajectory_wait_time
+
+            # target_location = np.add(trajectory[trajectory_index], np.multiply(np.subtract(trajectory[(trajectory_index + 1) % len(trajectory)], trajectory[trajectory_index]), interpolation_factor))
+
+            # target_location = np.add(target_location, plate_centre)
+
+            # Update camera centre location
+            camera.set_target_location(target_location)
+
+            print(f"target_location {target_location}")
+
+            if time.time() - last_transition_time > trajectory_wait_time:
+                trajectory_index = (trajectory_index + 1) % len(trajectory)
+                last_transition_time = time.time()
+                pid_x.zero_variables()
+                pid_y.zero_variables()
+
 
         ball_pos = camera.ball_location
         #ball_pos = np.subtract(ball_pos, plate_centre)
         
-        output_x = pid_x.update(plate_centre[0], ball_pos[0])
-        output_y = pid_y.update(plate_centre[1], ball_pos[1])
+        output_x = pid_x.update(target_location[0], ball_pos[0])
+        output_y = pid_y.update(target_location[1], ball_pos[1])
 
+        # img = np.zeros((1280,720,3), dtype="uint8")
+        # # draw goal
+        # cv2.circle(img, target_location.astype(np.uint8), 5, (255, 0, 0), -1)
+
+        # # draw deadzone
+        # cv2.circle(img, target_location.astype(np.uint8), 15, (255, 0, 0), 2)
+        # print(target_location)
+
+        # cv2.circle(img, (int(ball_pos[0]), int(ball_pos[1])), 5, (0, 0, 255), -1)
+
+        # cv2.imshow("img", img) 
 
         ###
 
@@ -80,6 +127,7 @@ def control_robot():
         if current_time - last_time == 0:
             continue
         
+    
 
 
 
@@ -121,9 +169,9 @@ if __name__ == "__main__":
     
     axis_control.set_acceleration(100)
     axis_control.move_axes(90, 90, 90, 1)
-    time.sleep(5)
+    time.sleep(4)
     axis_control.set_acceleration(max_acceleration)
-    camera_thread = threading.Thread(target=camera.detect_ball)
+    camera_thread = threading.Thread(target=camera.detect_ball, args=[target_location])
     camera_thread.start()
     time.sleep(0.25)
     robot_thread = threading.Thread(target=control_robot)
